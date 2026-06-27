@@ -49,6 +49,12 @@ accuracy**. Its learned attention maps are interpretable and strictly causal
 
 ![Attention maps](assets/sort_attention.png)
 
+**Convolutional network** — a LeNet-style CNN (`Conv2d` + `MaxPool2d`,
+implemented with im2col) reaches **~96% validation accuracy** on the digits.
+These are the feature maps its first convolutional layer learns to detect:
+
+![CNN feature maps](assets/cnn_feature_maps.png)
+
 All figures above are produced by the scripts in [`examples/`](examples/).
 
 ---
@@ -66,14 +72,16 @@ All figures above are produced by the scripts in [`examples/`](examples/).
 - **Transformers**: `LayerNorm`, `Embedding`, `MultiHeadSelfAttention` (causal),
   `TransformerBlock` and a `TinyTransformer`, all on the same engine
   ([`attention.py`](nanograd/attention.py)).
+- **Convolutional**: `Conv2d` and `MaxPool2d` (via im2col), plus `Flatten`
+  ([`conv.py`](nanograd/conv.py)).
 - **Losses**: MSE, softmax cross-entropy, and a sequence cross-entropy with
   `ignore_index`.
 - **Optimizers**: `SGD` (momentum + weight decay) and `Adam`, plus `StepLR`
   and `CosineAnnealingLR` schedulers ([`optim.py`](nanograd/optim.py)).
 - **Training utilities**: synthetic datasets, mini-batch iteration,
   standardization and train/test split ([`utils.py`](nanograd/utils.py)).
-- **Tested**: 65 tests including gradient checking for every operation and
-  end-to-end training tests (MLP and Transformer).
+- **Tested**: 73 tests including gradient checking for every operation and
+  end-to-end training tests (MLP, Transformer and CNN).
 
 ---
 
@@ -84,10 +92,11 @@ git clone https://github.com/AlanoHater/nanograd.git
 cd nanograd
 pip install -r requirements-dev.txt   # numpy, matplotlib, pytest
 
-python -m pytest                      # run the 65-test suite
+python -m pytest                      # run the 73-test suite
 python examples/spiral_classification.py
 python examples/digits_classification.py   # real data (needs scikit-learn)
 python examples/sort_transformer.py        # train a Transformer to sort
+python examples/cnn_digits.py              # train a CNN on the digits
 ```
 
 ### Train a neural network in a few lines
@@ -196,11 +205,12 @@ nanograd/
 │   ├── tensor.py        # autodiff engine: Tensor + backward()
 │   ├── nn.py            # layers (Linear, BatchNorm, Dropout, LayerNorm, ...)
 │   ├── attention.py     # self-attention, TransformerBlock, TinyTransformer
+│   ├── conv.py          # Conv2d + MaxPool2d (im2col)
 │   ├── optim.py         # SGD, Adam + LR schedulers
 │   ├── utils.py         # datasets, mini-batches, metrics
 │   └── _random.py       # reproducible RNG (manual_seed)
 ├── examples/            # runnable demos that produce the figures above
-├── tests/               # 65 tests, incl. gradient checking
+├── tests/               # 73 tests, incl. gradient checking
 ├── assets/              # generated figures
 └── .github/workflows/   # CI: tests on Python 3.10 / 3.11 / 3.12
 ```
@@ -209,9 +219,9 @@ nanograd/
 
 ## Possible extensions
 
-- Convolutional layers (`Conv2d`) via im2col
 - Recurrent layers (RNN / LSTM)
 - A scalar-valued "engine mode" to visualize the computation graph
+- Rotary positional embeddings (RoPE) for the Transformer
 - Loading larger datasets (e.g. the full MNIST)
 
 ---

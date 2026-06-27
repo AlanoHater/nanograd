@@ -99,6 +99,13 @@ class Sigmoid(Module):
         return x.sigmoid()
 
 
+class Flatten(Module):
+    """Flatten every dimension except the batch dimension into one vector."""
+
+    def forward(self, x: Tensor) -> Tensor:
+        return x.reshape(x.shape[0], -1)
+
+
 class Sequential(Module):
     """Chain modules so the output of one is the input of the next."""
 

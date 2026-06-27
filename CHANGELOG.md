@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented here.
 
+## [0.4.0] — 2026-06-27
+
+### Added
+- `nanograd.conv`: `Conv2d` and `MaxPool2d` implemented with the im2col trick
+  (only the rearrangement needs a custom backward; the convolution itself reuses
+  the engine's matmul).
+- `nn.Flatten`.
+- New example `examples/cnn_digits.py`: a LeNet-style CNN on the digits dataset
+  (~96% validation accuracy) with learned-feature-map visualization.
+- Conv/pool tests incl. a forward check against a brute-force reference and
+  gradient checks — **73 tests** total.
+
 ## [0.3.0] — 2026-06-27
 
 ### Added

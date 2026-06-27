@@ -144,6 +144,23 @@ def save_attention_grid(maps, tokens, path, title=""):
     plt.close(fig)
 
 
+def save_feature_maps(image, maps, path, title=""):
+    """Show an input image alongside the feature maps a conv layer produced."""
+    n = maps.shape[0]
+    fig, axes = plt.subplots(1, n + 1, figsize=((n + 1) * 1.25, 1.7))
+    axes[0].imshow(image, cmap="gray_r")
+    axes[0].set_title("input", fontsize=8)
+    axes[0].axis("off")
+    for i in range(n):
+        axes[i + 1].imshow(maps[i], cmap="viridis")
+        axes[i + 1].set_title(f"map {i + 1}", fontsize=7)
+        axes[i + 1].axis("off")
+    fig.suptitle(title)
+    fig.tight_layout()
+    fig.savefig(path, dpi=130)
+    plt.close(fig)
+
+
 def save_regression(x, y, x_line, y_line, path, title=""):
     """Plot noisy 1-D data points and the model's fitted curve."""
     fig, ax = plt.subplots(figsize=(6, 4))
