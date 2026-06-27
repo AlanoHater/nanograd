@@ -1,6 +1,6 @@
 # nanograd
 
-[![CI](https://github.com/AlanoHater/Nuevo-proyecto/actions/workflows/ci.yml/badge.svg)](https://github.com/AlanoHater/Nuevo-proyecto/actions/workflows/ci.yml)
+[![CI](https://github.com/AlanoHater/nanograd/actions/workflows/ci.yml/badge.svg)](https://github.com/AlanoHater/nanograd/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -65,8 +65,8 @@ All figures above are produced by the scripts in [`examples/`](examples/).
 ## Quick start
 
 ```bash
-git clone https://github.com/AlanoHater/Nuevo-proyecto.git
-cd Nuevo-proyecto
+git clone https://github.com/AlanoHater/nanograd.git
+cd nanograd
 pip install -r requirements-dev.txt   # numpy, matplotlib, pytest
 
 python -m pytest                      # run the 51-test suite

@@ -35,8 +35,8 @@ examples = ["matplotlib>=3.4", "scikit-learn>=1.0"]
 dev = ["pytest>=7.0", "matplotlib>=3.4", "scikit-learn>=1.0"]
 
 [project.urls]
-Homepage = "https://github.com/AlanoHater/Nuevo-proyecto"
-Repository = "https://github.com/AlanoHater/Nuevo-proyecto"
+Homepage = "https://github.com/AlanoHater/nanograd"
+Repository = "https://github.com/AlanoHater/nanograd"
 
 [tool.setuptools.packages.find]
 include = ["nanograd*"]
