@@ -18,4 +18,4 @@ from ._random import manual_seed
 from .tensor import Tensor
 
 __all__ = ["Tensor", "manual_seed", "nn", "optim", "utils"]
-__version__ = "0.1.0"
+__version__ = "0.2.0"

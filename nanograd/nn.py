@@ -20,6 +20,8 @@ from .tensor import Tensor
 class Module:
     """Base class for all layers and models."""
 
+    training: bool = True
+
     def forward(self, x: Tensor) -> Tensor:  # pragma: no cover - interface
         raise NotImplementedError
 
@@ -33,6 +35,21 @@ class Module:
     def zero_grad(self) -> None:
         for p in self.parameters():
             p.grad = np.zeros_like(p.data)
+
+    def _child_modules(self) -> List["Module"]:
+        """Sub-modules to recurse into for train()/eval()."""
+        return []
+
+    def train(self, mode: bool = True) -> "Module":
+        """Set training mode (affects Dropout and BatchNorm)."""
+        self.training = mode
+        for module in self._child_modules():
+            module.train(mode)
+        return self
+
+    def eval(self) -> "Module":
+        """Set evaluation mode (Dropout off, BatchNorm uses running stats)."""
+        return self.train(False)
 
 
 class Linear(Module):
@@ -95,6 +112,66 @@ class Sequential(Module):
 
     def parameters(self) -> List[Tensor]:
         return [p for layer in self.layers for p in layer.parameters()]
+
+    def _child_modules(self) -> List[Module]:
+        return self.layers
+
+
+class Dropout(Module):
+    """Inverted dropout: randomly zero a fraction ``p`` of activations.
+
+    Active only in training mode. Surviving activations are scaled by
+    ``1 / (1 - p)`` so the expected value is unchanged, which means no rescaling
+    is needed at evaluation time.
+    """
+
+    def __init__(self, p: float = 0.5):
+        if not 0.0 <= p < 1.0:
+            raise ValueError("dropout probability must be in [0, 1)")
+        self.p = p
+
+    def forward(self, x: Tensor) -> Tensor:
+        if not self.training or self.p == 0.0:
+            return x
+        mask = (rng().random(x.shape) >= self.p) / (1.0 - self.p)
+        return x * Tensor(mask, requires_grad=False)
+
+
+class BatchNorm1d(Module):
+    """Batch normalization for 2-D inputs of shape ``(batch, num_features)``.
+
+    Normalizes each feature using statistics computed over the batch during
+    training, then applies a learnable scale (``gamma``) and shift (``beta``).
+    At evaluation time it uses running estimates accumulated during training.
+    """
+
+    def __init__(self, num_features: int, eps: float = 1e-5, momentum: float = 0.1):
+        self.gamma = Tensor(np.ones((1, num_features)))
+        self.beta = Tensor(np.zeros((1, num_features)))
+        self.running_mean = np.zeros((1, num_features))
+        self.running_var = np.ones((1, num_features))
+        self.eps = eps
+        self.momentum = momentum
+
+    def forward(self, x: Tensor) -> Tensor:
+        if self.training:
+            mean = x.mean(axis=0, keepdims=True)
+            centered = x - mean
+            var = (centered * centered).mean(axis=0, keepdims=True)
+            # Update running statistics (detached from the graph).
+            self.running_mean = ((1 - self.momentum) * self.running_mean
+                                 + self.momentum * mean.data)
+            self.running_var = ((1 - self.momentum) * self.running_var
+                                + self.momentum * var.data)
+            normalized = centered / ((var + self.eps) ** 0.5)
+        else:
+            mean = Tensor(self.running_mean, requires_grad=False)
+            std = Tensor(np.sqrt(self.running_var + self.eps), requires_grad=False)
+            normalized = (x - mean) / std
+        return self.gamma * normalized + self.beta
+
+    def parameters(self) -> List[Tensor]:
+        return [self.gamma, self.beta]
 
 
 # --------------------------------------------------------------------------- #

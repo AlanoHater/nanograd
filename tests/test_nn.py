@@ -7,6 +7,8 @@ import nanograd as ng
 from nanograd import nn
 from nanograd.tensor import Tensor
 
+from _gradcheck import check_grad
+
 
 def test_linear_forward_shape():
     ng.manual_seed(0)
@@ -82,6 +84,57 @@ def test_cross_entropy_gradient_matches_softmax_minus_onehot():
     expected = (softmax - onehot) / 6
 
     assert np.allclose(logits.grad, expected, atol=1e-8)
+
+
+def test_batchnorm_normalizes_in_training():
+    bn = nn.BatchNorm1d(4)  # gamma=1, beta=0
+    x = Tensor(np.random.default_rng(0).standard_normal((64, 4)) * 3 + 5)
+    out = bn(x).data
+    assert np.allclose(out.mean(axis=0), 0.0, atol=1e-6)
+    assert np.allclose(out.std(axis=0), 1.0, atol=1e-3)
+
+
+def test_batchnorm_input_gradient():
+    bn = nn.BatchNorm1d(3)
+    x = np.random.default_rng(1).standard_normal((8, 3))
+    check_grad(lambda t: bn(t), x)
+
+
+def test_batchnorm_eval_uses_running_stats():
+    bn = nn.BatchNorm1d(2)
+    # Prime running stats with a few training batches.
+    for _ in range(20):
+        bn(Tensor(np.random.default_rng(0).standard_normal((16, 2))))
+    bn.eval()
+    x = Tensor(np.zeros((3, 2)))
+    out1 = bn(x).data
+    out2 = bn(x).data  # eval is deterministic; running stats not updated
+    assert np.allclose(out1, out2)
+
+
+def test_dropout_eval_is_identity():
+    drop = nn.Dropout(0.5).eval()
+    x = Tensor(np.ones((4, 4)))
+    assert np.allclose(drop(x).data, 1.0)
+
+
+def test_dropout_train_zeros_and_scales():
+    ng.manual_seed(0)
+    drop = nn.Dropout(0.5)
+    out = drop(Tensor(np.ones((2000, 1)))).data
+    frac_zero = np.mean(out == 0)
+    assert 0.45 < frac_zero < 0.55          # roughly p of units dropped
+    assert np.allclose(out[out != 0], 2.0)  # survivors scaled by 1/(1-p)
+
+
+def test_train_eval_mode_propagates():
+    model = nn.Sequential(
+        nn.Linear(4, 4), nn.BatchNorm1d(4), nn.ReLU(), nn.Dropout(0.3)
+    )
+    model.eval()
+    assert all(not m.training for m in model.layers)
+    model.train()
+    assert all(m.training for m in model.layers)
 
 
 if __name__ == "__main__":

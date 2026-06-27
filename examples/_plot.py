@@ -54,6 +54,64 @@ def save_loss_curve(losses, path, title=""):
     plt.close(fig)
 
 
+def save_accuracy_curves(train_acc, val_acc, path, title=""):
+    """Plot train vs validation accuracy over epochs."""
+    fig, ax = plt.subplots(figsize=(6, 4))
+    ax.plot(train_acc, label="train", color="#3b6ea5")
+    ax.plot(val_acc, label="validation", color="#c1432e")
+    ax.set_xlabel("epoch")
+    ax.set_ylabel("accuracy")
+    ax.set_ylim(0, 1.02)
+    ax.set_title(title)
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(path, dpi=120)
+    plt.close(fig)
+
+
+def save_confusion_matrix(y_true, y_pred, n_classes, path, title=""):
+    """Plot a confusion matrix as an annotated heatmap."""
+    cm = np.zeros((n_classes, n_classes), dtype=int)
+    for t, p in zip(y_true, y_pred):
+        cm[int(t), int(p)] += 1
+
+    fig, ax = plt.subplots(figsize=(6, 5))
+    im = ax.imshow(cm, cmap="Blues")
+    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+    ax.set_xticks(range(n_classes))
+    ax.set_yticks(range(n_classes))
+    ax.set_xlabel("predicted")
+    ax.set_ylabel("true")
+    ax.set_title(title)
+    threshold = cm.max() / 2.0
+    for i in range(n_classes):
+        for j in range(n_classes):
+            if cm[i, j]:
+                ax.text(j, i, cm[i, j], ha="center", va="center", fontsize=8,
+                        color="white" if cm[i, j] > threshold else "black")
+    fig.tight_layout()
+    fig.savefig(path, dpi=120)
+    plt.close(fig)
+
+
+def save_digit_predictions(images, y_true, y_pred, path, title="", rows=4, cols=8):
+    """Show a grid of digit images with predicted/true labels (red if wrong)."""
+    fig, axes = plt.subplots(rows, cols, figsize=(cols * 1.1, rows * 1.25))
+    for k, ax in enumerate(axes.ravel()):
+        ax.axis("off")
+        if k >= len(images):
+            continue
+        ax.imshow(images[k], cmap="gray_r")
+        correct = int(y_pred[k]) == int(y_true[k])
+        ax.set_title(f"{int(y_pred[k])} ({int(y_true[k])})", fontsize=8,
+                     color="#2a7a2a" if correct else "#c1432e")
+    fig.suptitle(title)
+    fig.tight_layout()
+    fig.savefig(path, dpi=120)
+    plt.close(fig)
+
+
 def save_regression(x, y, x_line, y_line, path, title=""):
     """Plot noisy 1-D data points and the model's fitted curve."""
     fig, ax = plt.subplots(figsize=(6, 4))

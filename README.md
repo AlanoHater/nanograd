@@ -31,7 +31,15 @@ produced by the engine:
 |:---:|:---:|
 | ![Moons decision boundary](assets/moons_decision_boundary.png) | ![Loss curve](assets/spiral_loss_curve.png) |
 
-All four figures are reproduced by the scripts in [`examples/`](examples/).
+**Real data — hand-written digits** (8×8 images, 10 classes): a deeper network
+with BatchNorm, Dropout and a cosine learning-rate schedule, trained with
+mini-batches, reaches **~97% validation accuracy**.
+
+| Predictions — `pred (true)` | Train vs validation accuracy |
+|:---:|:---:|
+| ![Digit predictions](assets/digits_predictions.png) | ![Digits accuracy](assets/digits_accuracy.png) |
+
+All figures above are produced by the scripts in [`examples/`](examples/).
 
 ---
 
@@ -41,12 +49,15 @@ All four figures are reproduced by the scripts in [`examples/`](examples/).
   broadcasting support ([`tensor.py`](nanograd/tensor.py)).
 - **Operations**: `+ - * / @ **`, `sum`, `mean`, `exp`, `log`, `reshape`,
   `transpose`, and activations `relu`, `tanh`, `sigmoid`.
-- **Neural-network layers**: `Linear` (with He/Xavier init), `ReLU`, `Tanh`,
-  `Sigmoid`, `Sequential` ([`nn.py`](nanograd/nn.py)).
+- **Layers**: `Linear` (He/Xavier init), `ReLU`, `Tanh`, `Sigmoid`,
+  `BatchNorm1d`, `Dropout`, and `Sequential`, with `train()` / `eval()` modes
+  ([`nn.py`](nanograd/nn.py)).
 - **Losses**: mean squared error and numerically-stable softmax cross-entropy.
-- **Optimizers**: `SGD` (with momentum + weight decay) and `Adam`
-  ([`optim.py`](nanograd/optim.py)).
-- **Tested**: 35 tests including gradient checking for every operation and an
+- **Optimizers**: `SGD` (momentum + weight decay) and `Adam`, plus `StepLR`
+  and `CosineAnnealingLR` schedulers ([`optim.py`](nanograd/optim.py)).
+- **Training utilities**: synthetic datasets, mini-batch iteration,
+  standardization and train/test split ([`utils.py`](nanograd/utils.py)).
+- **Tested**: 51 tests including gradient checking for every operation and an
   end-to-end training test.
 
 ---
@@ -58,8 +69,9 @@ git clone https://github.com/AlanoHater/Nuevo-proyecto.git
 cd Nuevo-proyecto
 pip install -r requirements-dev.txt   # numpy, matplotlib, pytest
 
-python -m pytest                      # run the test suite
+python -m pytest                      # run the 51-test suite
 python examples/spiral_classification.py
+python examples/digits_classification.py   # real data (needs scikit-learn)
 ```
 
 ### Train a neural network in a few lines
@@ -136,12 +148,12 @@ same technique used to debug real deep-learning frameworks.
 nanograd/
 ├── nanograd/            # the library (NumPy only)
 │   ├── tensor.py        # autodiff engine: Tensor + backward()
-│   ├── nn.py            # layers, Sequential, losses
-│   ├── optim.py         # SGD, Adam
-│   ├── utils.py         # synthetic datasets + metrics
+│   ├── nn.py            # layers (Linear, BatchNorm, Dropout, ...), losses
+│   ├── optim.py         # SGD, Adam + LR schedulers
+│   ├── utils.py         # datasets, mini-batches, metrics
 │   └── _random.py       # reproducible RNG (manual_seed)
 ├── examples/            # runnable demos that produce the figures above
-├── tests/               # 35 tests, incl. gradient checking
+├── tests/               # 51 tests, incl. gradient checking
 ├── assets/              # generated figures
 └── .github/workflows/   # CI: tests on Python 3.9 / 3.11 / 3.12
 ```
@@ -150,10 +162,10 @@ nanograd/
 
 ## Possible extensions
 
-- Convolutional and batch-norm layers
-- Mini-batch data loading and learning-rate schedules
-- A scalar-valued "engine mode" to visualize the graph
-- Loading a real dataset (e.g. MNIST) instead of synthetic data
+- Convolutional layers (`Conv2d`) via im2col
+- Recurrent layers (RNN / LSTM)
+- A scalar-valued "engine mode" to visualize the computation graph
+- Loading larger datasets (e.g. the full MNIST)
 
 ---
 

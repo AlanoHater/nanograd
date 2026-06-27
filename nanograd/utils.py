@@ -71,6 +71,16 @@ def train_test_split(x: np.ndarray, y: np.ndarray, test_frac: float = 0.2):
     return x[train_idx], x[test_idx], y[train_idx], y[test_idx]
 
 
+def iterate_minibatches(x: np.ndarray, y: np.ndarray, batch_size: int,
+                        shuffle: bool = True):
+    """Yield ``(x_batch, y_batch)`` tuples covering the dataset once (an epoch)."""
+    n = x.shape[0]
+    indices = rng().permutation(n) if shuffle else np.arange(n)
+    for start in range(0, n, batch_size):
+        batch_idx = indices[start:start + batch_size]
+        yield x[batch_idx], y[batch_idx]
+
+
 def standardize(x: np.ndarray, mean=None, std=None):
     """Zero-mean, unit-variance scaling. Returns ``(x_scaled, mean, std)``."""
     if mean is None:
