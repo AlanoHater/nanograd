@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented here.
 
+## [0.5.0] — 2026-06-27
+
+### Added
+- `Tensor.__getitem__` (indexing/slicing) with a scatter-add backward.
+- `Module.__call__` now forwards arbitrary args (so cells can take a state).
+- `nanograd.rnn`: `RNNCell`, `LSTMCell` (with forget-gate bias = 1) and an `RNN`
+  wrapper that runs a cell over a sequence, trained via backpropagation through
+  time.
+- `utils.make_recall_dataset` (first-bit recall sequence-memory task).
+- New example `examples/rnn_recall.py`: trains an RNN and an LSTM to recall the
+  first bit of a sequence and plots their learning curves.
+- Indexing and RNN/LSTM tests (incl. BPTT gradient checks) — **81 tests** total.
+
 ## [0.4.0] — 2026-06-27
 
 ### Added

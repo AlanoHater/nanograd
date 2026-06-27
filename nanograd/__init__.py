@@ -13,9 +13,9 @@ Quick start
 >>> loss.backward(); opt.step()
 """
 
-from . import nn, optim, utils, attention, conv
+from . import nn, optim, utils, attention, conv, rnn
 from ._random import manual_seed
 from .tensor import Tensor
 
-__all__ = ["Tensor", "manual_seed", "nn", "optim", "utils", "attention", "conv"]
-__version__ = "0.4.0"
+__all__ = ["Tensor", "manual_seed", "nn", "optim", "utils", "attention", "conv", "rnn"]
+__version__ = "0.5.0"

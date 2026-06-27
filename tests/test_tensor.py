@@ -148,5 +148,17 @@ def test_constants_get_no_gradient():
     assert np.allclose(x.grad, c.data)
 
 
+def test_getitem_integer_index():
+    weights = rng.standard_normal((4,))
+    check_grad(lambda a: a[1] * Tensor(weights, requires_grad=False),
+               rng.standard_normal((3, 4)))
+
+
+def test_getitem_slice():
+    weights = rng.standard_normal((3, 2))
+    check_grad(lambda a: a[:, 1:3] * Tensor(weights, requires_grad=False),
+               rng.standard_normal((3, 4)))
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

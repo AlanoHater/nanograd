@@ -112,6 +112,20 @@ def make_sort_dataset(n_samples: int, length: int = 6, num_digits: int = 3):
     return x, y
 
 
+def make_recall_dataset(n_samples: int, length: int = 12):
+    """Sequence-memory task: the label is the *first* bit of a binary sequence.
+
+    The model sees the whole sequence and must reproduce its first bit at the
+    final step, so it has to carry information across all ``length`` time steps —
+    a clean test of recurrent memory. Returns ``x`` of shape
+    ``(n_samples, length, 1)`` and labels ``(n_samples,)``.
+    """
+    bits = rng().integers(0, 2, size=(n_samples, length))
+    y = bits[:, 0].copy()
+    x = bits.astype(np.float64)[:, :, None]
+    return x, y
+
+
 def sort_accuracy(model, n_samples: int = 512, length: int = 6, num_digits: int = 3):
     """Autoregressively decode sorted sequences and measure accuracy.
 

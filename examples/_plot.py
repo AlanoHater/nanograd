@@ -144,6 +144,23 @@ def save_attention_grid(maps, tokens, path, title=""):
     plt.close(fig)
 
 
+def save_curves(series, path, title="", xlabel="epoch", ylabel="accuracy", ylim=None):
+    """Plot one or more named curves on the same axes (``series`` = name->list)."""
+    fig, ax = plt.subplots(figsize=(6, 4))
+    for label, values in series.items():
+        ax.plot(values, label=label)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    if ylim is not None:
+        ax.set_ylim(*ylim)
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(path, dpi=120)
+    plt.close(fig)
+
+
 def save_feature_maps(image, maps, path, title=""):
     """Show an input image alongside the feature maps a conv layer produced."""
     n = maps.shape[0]

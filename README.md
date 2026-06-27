@@ -55,6 +55,12 @@ These are the feature maps its first convolutional layer learns to detect:
 
 ![CNN feature maps](assets/cnn_feature_maps.png)
 
+**Recurrent memory** — an RNN and an LSTM (trained with backpropagation through
+time) learn to recall the first bit of a length-12 sequence, climbing to 100%
+accuracy in a couple of epochs:
+
+![Recurrent memory](assets/rnn_recall.png)
+
 All figures above are produced by the scripts in [`examples/`](examples/).
 
 ---
@@ -64,8 +70,8 @@ All figures above are produced by the scripts in [`examples/`](examples/).
 - **Reverse-mode autodiff** over n-dimensional NumPy arrays with full
   broadcasting support ([`tensor.py`](nanograd/tensor.py)).
 - **Operations**: `+ - * / @ **` (incl. batched matmul), `sum`, `mean`, `exp`,
-  `log`, `reshape`, `transpose`, `softmax`, and activations `relu`, `tanh`,
-  `sigmoid`.
+  `log`, `reshape`, `transpose`, `softmax`, indexing/slicing, and activations
+  `relu`, `tanh`, `sigmoid`.
 - **Layers**: `Linear` (He/Xavier init), `ReLU`, `Tanh`, `Sigmoid`,
   `BatchNorm1d`, `Dropout`, and `Sequential`, with `train()` / `eval()` modes
   ([`nn.py`](nanograd/nn.py)).
@@ -74,14 +80,16 @@ All figures above are produced by the scripts in [`examples/`](examples/).
   ([`attention.py`](nanograd/attention.py)).
 - **Convolutional**: `Conv2d` and `MaxPool2d` (via im2col), plus `Flatten`
   ([`conv.py`](nanograd/conv.py)).
+- **Recurrent**: `RNNCell`, `LSTMCell` and an `RNN` wrapper, trained with
+  backpropagation through time ([`rnn.py`](nanograd/rnn.py)).
 - **Losses**: MSE, softmax cross-entropy, and a sequence cross-entropy with
   `ignore_index`.
 - **Optimizers**: `SGD` (momentum + weight decay) and `Adam`, plus `StepLR`
   and `CosineAnnealingLR` schedulers ([`optim.py`](nanograd/optim.py)).
 - **Training utilities**: synthetic datasets, mini-batch iteration,
   standardization and train/test split ([`utils.py`](nanograd/utils.py)).
-- **Tested**: 73 tests including gradient checking for every operation and
-  end-to-end training tests (MLP, Transformer and CNN).
+- **Tested**: 81 tests including gradient checking for every operation and
+  end-to-end training tests (MLP, Transformer, CNN and RNN).
 
 ---
 
@@ -92,11 +100,12 @@ git clone https://github.com/AlanoHater/nanograd.git
 cd nanograd
 pip install -r requirements-dev.txt   # numpy, matplotlib, pytest
 
-python -m pytest                      # run the 73-test suite
+python -m pytest                      # run the 81-test suite
 python examples/spiral_classification.py
 python examples/digits_classification.py   # real data (needs scikit-learn)
 python examples/sort_transformer.py        # train a Transformer to sort
 python examples/cnn_digits.py              # train a CNN on the digits
+python examples/rnn_recall.py              # RNN/LSTM sequence-memory task
 ```
 
 ### Train a neural network in a few lines
@@ -206,11 +215,12 @@ nanograd/
 │   ├── nn.py            # layers (Linear, BatchNorm, Dropout, LayerNorm, ...)
 │   ├── attention.py     # self-attention, TransformerBlock, TinyTransformer
 │   ├── conv.py          # Conv2d + MaxPool2d (im2col)
+│   ├── rnn.py           # RNNCell, LSTMCell, RNN (backprop through time)
 │   ├── optim.py         # SGD, Adam + LR schedulers
 │   ├── utils.py         # datasets, mini-batches, metrics
 │   └── _random.py       # reproducible RNG (manual_seed)
 ├── examples/            # runnable demos that produce the figures above
-├── tests/               # 73 tests, incl. gradient checking
+├── tests/               # 81 tests, incl. gradient checking
 ├── assets/              # generated figures
 └── .github/workflows/   # CI: tests on Python 3.10 / 3.11 / 3.12
 ```
@@ -219,7 +229,6 @@ nanograd/
 
 ## Possible extensions
 
-- Recurrent layers (RNN / LSTM)
 - A scalar-valued "engine mode" to visualize the computation graph
 - Rotary positional embeddings (RoPE) for the Transformer
 - Loading larger datasets (e.g. the full MNIST)

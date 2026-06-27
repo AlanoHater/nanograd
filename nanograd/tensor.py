@@ -299,6 +299,20 @@ class Tensor:
         exp = (self - shift).exp()
         return exp / exp.sum(axis=axis, keepdims=True)
 
+    def __getitem__(self, key) -> "Tensor":
+        """Index/slice the tensor; gradients scatter back to selected entries."""
+        out = Tensor(self.data[key], (self,), "getitem")
+
+        def _backward():
+            if not self.requires_grad:
+                return
+            grad = np.zeros_like(self.data)
+            np.add.at(grad, key, out.grad)  # scatter-add (handles repeats/slices)
+            self.grad += grad
+
+        out._backward = _backward
+        return out
+
     # ------------------------------------------------------------------ #
     # Reflected / unary operators
     # ------------------------------------------------------------------ #

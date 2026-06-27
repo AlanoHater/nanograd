@@ -25,8 +25,8 @@ class Module:
     def forward(self, x: Tensor) -> Tensor:  # pragma: no cover - interface
         raise NotImplementedError
 
-    def __call__(self, x: Tensor) -> Tensor:
-        return self.forward(x)
+    def __call__(self, *args, **kwargs) -> Tensor:
+        return self.forward(*args, **kwargs)
 
     def parameters(self) -> List[Tensor]:
         """Return the list of learnable tensors in this module."""
