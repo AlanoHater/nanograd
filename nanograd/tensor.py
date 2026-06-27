@@ -289,6 +289,16 @@ class Tensor:
         out._backward = _backward
         return out
 
+    def softmax(self, axis: int = -1) -> "Tensor":
+        """Numerically-stable softmax along ``axis``.
+
+        Built entirely from primitive ops, so its gradient comes for free from
+        the engine. The max is subtracted as a constant for stability.
+        """
+        shift = Tensor(self.data.max(axis=axis, keepdims=True), requires_grad=False)
+        exp = (self - shift).exp()
+        return exp / exp.sum(axis=axis, keepdims=True)
+
     # ------------------------------------------------------------------ #
     # Reflected / unary operators
     # ------------------------------------------------------------------ #

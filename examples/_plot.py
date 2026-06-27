@@ -112,6 +112,38 @@ def save_digit_predictions(images, y_true, y_pred, path, title="", rows=4, cols=
     plt.close(fig)
 
 
+def save_attention_grid(maps, tokens, path, title=""):
+    """Plot attention weights as a grid of heatmaps (rows=layers, cols=heads).
+
+    ``maps`` is a list (one per layer) of arrays shaped ``(n_heads, T, T)`` for a
+    single example. Brighter cells mean the query position (row) attends more to
+    the key position (column).
+    """
+    n_layers = len(maps)
+    n_heads = maps[0].shape[0]
+    fig, axes = plt.subplots(n_layers, n_heads,
+                             figsize=(n_heads * 2.4, n_layers * 2.4), squeeze=False)
+    labels = [str(t) for t in tokens]
+    for layer in range(n_layers):
+        for head in range(n_heads):
+            ax = axes[layer][head]
+            ax.imshow(maps[layer][head], cmap="viridis", vmin=0, vmax=1)
+            ax.set_xticks(range(len(labels)))
+            ax.set_xticklabels(labels, fontsize=6)
+            ax.set_yticks(range(len(labels)))
+            ax.set_yticklabels(labels, fontsize=6)
+            if layer == 0:
+                ax.set_title(f"head {head + 1}", fontsize=9)
+            if head == 0:
+                ax.set_ylabel(f"layer {layer + 1}\nquery", fontsize=8)
+            if layer == n_layers - 1:
+                ax.set_xlabel("key", fontsize=7)
+    fig.suptitle(title)
+    fig.tight_layout()
+    fig.savefig(path, dpi=130)
+    plt.close(fig)
+
+
 def save_regression(x, y, x_line, y_line, path, title=""):
     """Plot noisy 1-D data points and the model's fitted curve."""
     fig, ax = plt.subplots(figsize=(6, 4))

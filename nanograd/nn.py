@@ -174,6 +174,51 @@ class BatchNorm1d(Module):
         return [self.gamma, self.beta]
 
 
+class LayerNorm(Module):
+    """Layer normalization over the last dimension.
+
+    Unlike BatchNorm, statistics are computed per-sample across the features, so
+    it behaves identically in training and evaluation — which is why it is the
+    normalization of choice inside Transformers.
+    """
+
+    def __init__(self, dim: int, eps: float = 1e-5):
+        self.gamma = Tensor(np.ones(dim))
+        self.beta = Tensor(np.zeros(dim))
+        self.eps = eps
+
+    def forward(self, x: Tensor) -> Tensor:
+        mean = x.mean(axis=-1, keepdims=True)
+        centered = x - mean
+        var = (centered * centered).mean(axis=-1, keepdims=True)
+        normalized = centered / ((var + self.eps) ** 0.5)
+        return self.gamma * normalized + self.beta
+
+    def parameters(self) -> List[Tensor]:
+        return [self.gamma, self.beta]
+
+
+class Embedding(Module):
+    """Lookup table mapping integer ids to dense vectors.
+
+    The lookup is expressed as a one-hot matrix multiply so it reuses the
+    engine's ``matmul`` (and therefore its gradient): the rows of the weight
+    matrix that were selected receive the incoming gradient.
+    """
+
+    def __init__(self, num_embeddings: int, dim: int):
+        self.num_embeddings = num_embeddings
+        self.weight = Tensor(rng().standard_normal((num_embeddings, dim)) * 0.02)
+
+    def forward(self, idx) -> Tensor:
+        idx = np.asarray(idx).astype(int)
+        onehot = np.eye(self.num_embeddings)[idx]  # (..., num_embeddings)
+        return Tensor(onehot, requires_grad=False) @ self.weight  # (..., dim)
+
+    def parameters(self) -> List[Tensor]:
+        return [self.weight]
+
+
 # --------------------------------------------------------------------------- #
 # Loss functions
 # --------------------------------------------------------------------------- #
@@ -204,3 +249,25 @@ def cross_entropy(logits: Tensor, labels) -> Tensor:
     onehot[np.arange(n), labels] = 1.0
     picked = (log_probs * Tensor(onehot, requires_grad=False)).sum(axis=1)  # (N,)
     return -picked.mean()
+
+
+def cross_entropy_seq(logits: Tensor, targets, ignore_index: int = -1) -> Tensor:
+    """Cross-entropy for sequences of shape ``(batch, time, vocab)``.
+
+    ``targets`` is an integer array ``(batch, time)``. Positions equal to
+    ``ignore_index`` contribute no loss (used to ignore the prompt tokens when
+    training a model to produce only the answer part of a sequence).
+    """
+    b, t, vocab = logits.shape
+    flat_logits = logits.reshape(b * t, vocab)
+    flat_targets = np.asarray(targets).astype(int).reshape(b * t)
+
+    valid = flat_targets != ignore_index
+    safe = np.where(valid, flat_targets, 0)
+    onehot = np.eye(vocab)[safe] * valid[:, None]  # zero rows for ignored tokens
+
+    maxv = Tensor(flat_logits.data.max(axis=1, keepdims=True), requires_grad=False)
+    shifted = flat_logits - maxv
+    log_probs = shifted - shifted.exp().sum(axis=1, keepdims=True).log()
+    picked = (log_probs * Tensor(onehot, requires_grad=False)).sum(axis=1)
+    return -(picked.sum()) / float(valid.sum())

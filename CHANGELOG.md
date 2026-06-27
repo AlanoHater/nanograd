@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented here.
 
+## [0.3.0] — 2026-06-27
+
+### Added
+- `Tensor.softmax` (numerically stable) plus verified gradients for batched and
+  4-D `matmul`.
+- `nn.LayerNorm` and `nn.Embedding`.
+- `nanograd.attention`: `MultiHeadSelfAttention` (with causal masking),
+  `TransformerBlock` and `TinyTransformer` — a decoder-only Transformer built
+  entirely on the autodiff engine.
+- `nn.cross_entropy_seq` (sequence loss with `ignore_index`).
+- `utils.make_sort_dataset` and `utils.sort_accuracy` for the sorting task.
+- New example `examples/sort_transformer.py`: trains the Transformer to sort
+  digit sequences (100% exact-match) and saves attention-map heatmaps.
+- Attention/Transformer tests — **65 tests** total.
+
 ## [0.2.0] — 2026-06-27
 
 ### Added

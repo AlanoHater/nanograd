@@ -12,6 +12,9 @@ computation graph, backpropagation, common layers, loss functions and
 optimizers. It depends only on NumPy. The goal is **understanding how deep
 learning actually works under the hood** — not raw performance.
 
+The same engine scales all the way up to **multi-head self-attention and a small
+Transformer**, trained with gradients it computes itself.
+
 Every gradient in the engine is verified against numerical finite differences
 (*gradient checking*), so the math is provably correct, not just plausible.
 
@@ -39,6 +42,13 @@ mini-batches, reaches **~97% validation accuracy**.
 |:---:|:---:|
 | ![Digit predictions](assets/digits_predictions.png) | ![Digits accuracy](assets/digits_accuracy.png) |
 
+**Attention from scratch** — a decoder-only Transformer with causal multi-head
+self-attention, trained on a toy *sorting* task, reaches **100% exact-match
+accuracy**. Its learned attention maps are interpretable and strictly causal
+(nothing above the diagonal):
+
+![Attention maps](assets/sort_attention.png)
+
 All figures above are produced by the scripts in [`examples/`](examples/).
 
 ---
@@ -47,18 +57,23 @@ All figures above are produced by the scripts in [`examples/`](examples/).
 
 - **Reverse-mode autodiff** over n-dimensional NumPy arrays with full
   broadcasting support ([`tensor.py`](nanograd/tensor.py)).
-- **Operations**: `+ - * / @ **`, `sum`, `mean`, `exp`, `log`, `reshape`,
-  `transpose`, and activations `relu`, `tanh`, `sigmoid`.
+- **Operations**: `+ - * / @ **` (incl. batched matmul), `sum`, `mean`, `exp`,
+  `log`, `reshape`, `transpose`, `softmax`, and activations `relu`, `tanh`,
+  `sigmoid`.
 - **Layers**: `Linear` (He/Xavier init), `ReLU`, `Tanh`, `Sigmoid`,
   `BatchNorm1d`, `Dropout`, and `Sequential`, with `train()` / `eval()` modes
   ([`nn.py`](nanograd/nn.py)).
-- **Losses**: mean squared error and numerically-stable softmax cross-entropy.
+- **Transformers**: `LayerNorm`, `Embedding`, `MultiHeadSelfAttention` (causal),
+  `TransformerBlock` and a `TinyTransformer`, all on the same engine
+  ([`attention.py`](nanograd/attention.py)).
+- **Losses**: MSE, softmax cross-entropy, and a sequence cross-entropy with
+  `ignore_index`.
 - **Optimizers**: `SGD` (momentum + weight decay) and `Adam`, plus `StepLR`
   and `CosineAnnealingLR` schedulers ([`optim.py`](nanograd/optim.py)).
 - **Training utilities**: synthetic datasets, mini-batch iteration,
   standardization and train/test split ([`utils.py`](nanograd/utils.py)).
-- **Tested**: 51 tests including gradient checking for every operation and an
-  end-to-end training test.
+- **Tested**: 65 tests including gradient checking for every operation and
+  end-to-end training tests (MLP and Transformer).
 
 ---
 
@@ -69,9 +84,10 @@ git clone https://github.com/AlanoHater/nanograd.git
 cd nanograd
 pip install -r requirements-dev.txt   # numpy, matplotlib, pytest
 
-python -m pytest                      # run the 51-test suite
+python -m pytest                      # run the 65-test suite
 python examples/spiral_classification.py
 python examples/digits_classification.py   # real data (needs scikit-learn)
+python examples/sort_transformer.py        # train a Transformer to sort
 ```
 
 ### Train a neural network in a few lines
@@ -142,20 +158,51 @@ same technique used to debug real deep-learning frameworks.
 
 ---
 
+## Transformers, built on the same engine
+
+Attention is just matrix multiplies, a softmax and residual adds — so the
+Transformer layers in [`attention.py`](nanograd/attention.py) need **no custom
+backward code**. `loss.backward()` differentiates the whole model automatically.
+
+```python
+import nanograd as ng
+from nanograd import nn, optim, utils
+from nanograd.attention import TinyTransformer
+
+ng.manual_seed(0)
+length, vocab = 6, 3
+x, y = utils.make_sort_dataset(4000, length, vocab)   # learn to sort digits
+
+model = TinyTransformer(vocab, block_size=2 * length - 1,
+                        d_model=64, n_heads=4, n_layers=2)
+opt = optim.Adam(model.parameters(), lr=3e-3)
+
+for xb, yb in utils.iterate_minibatches(x, y, 64):
+    opt.zero_grad()
+    nn.cross_entropy_seq(model(xb), yb).backward()
+    opt.step()
+```
+
+`model.attention_maps()` returns the per-layer attention weights that produced
+the heatmaps shown above.
+
+---
+
 ## Project structure
 
 ```
 nanograd/
 ├── nanograd/            # the library (NumPy only)
 │   ├── tensor.py        # autodiff engine: Tensor + backward()
-│   ├── nn.py            # layers (Linear, BatchNorm, Dropout, ...), losses
+│   ├── nn.py            # layers (Linear, BatchNorm, Dropout, LayerNorm, ...)
+│   ├── attention.py     # self-attention, TransformerBlock, TinyTransformer
 │   ├── optim.py         # SGD, Adam + LR schedulers
 │   ├── utils.py         # datasets, mini-batches, metrics
 │   └── _random.py       # reproducible RNG (manual_seed)
 ├── examples/            # runnable demos that produce the figures above
-├── tests/               # 51 tests, incl. gradient checking
+├── tests/               # 65 tests, incl. gradient checking
 ├── assets/              # generated figures
-└── .github/workflows/   # CI: tests on Python 3.9 / 3.11 / 3.12
+└── .github/workflows/   # CI: tests on Python 3.10 / 3.11 / 3.12
 ```
 
 ---

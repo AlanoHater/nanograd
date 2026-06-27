@@ -88,3 +88,52 @@ def standardize(x: np.ndarray, mean=None, std=None):
     if std is None:
         std = x.std(axis=0) + 1e-8
     return (x - mean) / std, mean, std
+
+
+# --------------------------------------------------------------------------- #
+# Toy algorithmic task: sort a sequence of digits (used by the Transformer demo)
+# --------------------------------------------------------------------------- #
+def make_sort_dataset(n_samples: int, length: int = 6, num_digits: int = 3):
+    """Build a next-token-prediction dataset for sorting digit sequences.
+
+    Each example concatenates an unsorted sequence with its sorted version. The
+    model is trained to predict the next token; loss on the unsorted "prompt"
+    region is masked out with ``-1`` so the model is only graded on producing
+    the sorted answer.
+
+    Returns ``(x, y)`` of shape ``(n_samples, 2*length - 1)``.
+    """
+    inp = rng().integers(0, num_digits, size=(n_samples, length))
+    sol = np.sort(inp, axis=1)
+    cat = np.concatenate([inp, sol], axis=1)        # (n, 2L)
+    x = cat[:, :-1].copy()                          # (n, 2L-1)
+    y = cat[:, 1:].copy()                           # (n, 2L-1)
+    y[:, :length - 1] = -1                          # ignore loss on the prompt
+    return x, y
+
+
+def sort_accuracy(model, n_samples: int = 512, length: int = 6, num_digits: int = 3):
+    """Autoregressively decode sorted sequences and measure accuracy.
+
+    Returns ``(exact_match, per_token)`` accuracy. ``model(idx)`` must accept an
+    integer array of shape ``(n, block_size)`` and return logits ``(n, block, V)``.
+    """
+    block = 2 * length - 1
+    inp = rng().integers(0, num_digits, size=(n_samples, length))
+    sol = np.sort(inp, axis=1)
+
+    x = np.zeros((n_samples, block), dtype=int)
+    x[:, :length] = inp
+    last = None
+    for pos in range(length - 1, block):  # positions whose next-token is the answer
+        logits = model(x).data            # (n, block, V)
+        nxt = np.argmax(logits[:, pos, :], axis=1)
+        if pos + 1 < block:
+            x[:, pos + 1] = nxt
+        else:
+            last = nxt
+    pred = np.concatenate([x[:, length:block], last[:, None]], axis=1)  # (n, L)
+
+    exact = float(np.mean(np.all(pred == sol, axis=1)))
+    per_token = float(np.mean(pred == sol))
+    return exact, per_token
